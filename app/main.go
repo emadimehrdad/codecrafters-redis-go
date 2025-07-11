@@ -19,23 +19,50 @@ func main() {
 		fmt.Println("Failed to bind to port 6379")
 		os.Exit(1)
 	}
-	conn, err := l.Accept()
 
-	if err != nil {
+	defer func(l net.Listener) {
+		err := l.Close()
+		if err != nil {
+			fmt.Println("Failed to close listener")
+		}
+	}(l)
 
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	for {
+		conn, err := l.Accept()
+
+		if err != nil {
+
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+
+		err = HandleClient(conn)
+
+		if err != nil {
+			fmt.Println("Error handling client: ", err.Error())
+		}
 	}
 
-	_, err = conn.Write([]byte("+PONG\r\n"))
+}
 
-	if err != nil {
-		fmt.Println("Failed to write to connection: ", err.Error())
-	}
+func HandleClient(conn net.Conn) error {
 
-	err = conn.Close()
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+			fmt.Println("Error closing connection: ", err.Error())
+		}
+	}(conn)
 
-	if err != nil {
-		fmt.Println("Failed to close connection: ", err.Error())
+	for {
+		buf := make([]byte, 128)
+		_, err := conn.Read(buf)
+		if err != nil {
+			return err
+		}
+		_, err = conn.Write([]byte("+PONG\r\n"))
+		if err != nil {
+			return err
+		}
 	}
 }
