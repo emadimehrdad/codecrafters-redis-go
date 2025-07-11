@@ -36,7 +36,12 @@ func main() {
 			os.Exit(1)
 		}
 
-		err = HandleClient(conn)
+		go func() {
+			err := HandleClient(conn)
+			if err != nil {
+				fmt.Println("Error handling client: ", err.Error())
+			}
+		}()
 
 		if err != nil {
 			fmt.Println("Error handling client: ", err.Error())
