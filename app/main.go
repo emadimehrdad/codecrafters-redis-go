@@ -57,14 +57,14 @@ func HandleClient(conn net.Conn) error {
 	}(conn)
 
 	for {
-		buf := make([]byte, 128)
-		_, err := conn.Read(buf)
+		resp := NewResp(conn)
+		val, err := resp.Read()
 		if err != nil {
 			return err
 		}
-		_, err = conn.Write([]byte("+PONG\r\n"))
-		if err != nil {
-			return err
-		}
+		fmt.Println(val)
+
+		// ignore request and send back a PONG
+		conn.Write([]byte("+OK\r\n"))
 	}
 }
