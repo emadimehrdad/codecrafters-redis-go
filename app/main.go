@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 // Ensures gofmt doesn't remove the "net" and "os" imports in stage 1 (feel free to remove this!)
@@ -61,15 +62,34 @@ func HandleClient(conn net.Conn) error {
 		val, err := resp.Read()
 		if err != nil {
 			fmt.Println(err)
-			return err
+			continue
 		}
-		fmt.Println(val)
 
-		err = resp.Write(val)
+		if val.typ != "array" {
+			fmt.Println("Invalid request, expected array")
+			continue
+		}
+
+		if len(val.array) == 0 {
+			fmt.Println("Invalid request, expected array length > 0")
+			continue
+		}
+
+		command := strings.ToUpper(val.array[0].bulk)
+		handler := Handlers[command]
+
+		if handler == nil {
+			fmt.Println("Invalid request, expected handler")
+			continue
+		}
+
+		response := handler(val.array[1:])
+		err = resp.Write(response)
 		if err != nil {
 			fmt.Println(err)
-			return err
+			continue
 		}
+
 	}
 }
 
