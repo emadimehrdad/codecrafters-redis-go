@@ -65,11 +65,13 @@ func HandleClient(conn net.Conn) error {
 		}
 		fmt.Println(val)
 
-		// ignore request and send back a PONG
-		conn.Write([]byte("+OK\r\n"))
+		err = resp.Write(val)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
 	}
 }
-
 
 // Test the code using this:
 // printf '*2\r\n$5\r\nhello\r\n$5\r\nworld\r\n' | nc localhost 6378

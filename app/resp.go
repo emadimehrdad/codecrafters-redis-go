@@ -23,12 +23,69 @@ type Value struct {
 	array []Value
 }
 
-type Resp struct {
-	reader *bufio.Reader
+func (v Value) Marshal() ([]byte, error) {
+	switch v.typ {
+	case "array":
+		return v.marshalArray()
+	case "bulk":
+		return v.marshalBulk()
+	case "string":
+		return v.marshalString()
+	case "null":
+		return v.marshalNull()
+	case "error":
+		return v.marshalError()
+	default:
+		return []byte{}, fmt.Errorf("unknown type: %s", v.typ)
+	}
 }
 
-func NewResp(rd io.Reader) *Resp {
-	return &Resp{bufio.NewReader(rd)}
+func (v Value) marshalArray() ([]byte, error) {
+	bytes := make([]byte, 0, len(v.bulk)+4)
+	bytes = append(bytes, ARRAY)
+	bytes = append(bytes, strconv.Itoa(len(v.array))...)
+	bytes = append(bytes, '\r', '\n')
+	for _, val := range v.array {
+		marshalledValue, _ := val.Marshal()
+		bytes = append(bytes, marshalledValue...)
+	}
+	return bytes, nil
+}
+func (v Value) marshalString() ([]byte, error) {
+	bytes := make([]byte, 0, len(v.str)+3)
+	bytes = append(bytes, STRING)
+	bytes = append(bytes, v.str...)
+	bytes = append(bytes, '\r', '\n')
+	return bytes, nil
+}
+func (v Value) marshalBulk() ([]byte, error) {
+	bytes := make([]byte, 0, len(v.bulk)+4)
+	bytes = append(bytes, BULK)
+	bytes = append(bytes, strconv.Itoa(len(v.bulk))...)
+	bytes = append(bytes, v.bulk...)
+	bytes = append(bytes, '\r', '\n')
+	return bytes, nil
+}
+func (v Value) marshalError() ([]byte, error) {
+	var bytes []byte
+	bytes = append(bytes, ERROR)
+	bytes = append(bytes, v.str...)
+	bytes = append(bytes, '\r', '\n')
+
+	return bytes, nil
+}
+
+func (v Value) marshalNull() ([]byte, error) {
+	return []byte("$-1\r\n"), nil
+}
+
+type Resp struct {
+	reader *bufio.Reader
+	writer io.Writer
+}
+
+func NewResp(rd io.ReadWriter) *Resp {
+	return &Resp{bufio.NewReader(rd), rd}
 }
 
 func (r *Resp) readLine() ([]byte, int, error) {
@@ -132,17 +189,16 @@ func (r *Resp) Read() (Value, error) {
 	}
 }
 
-type Type byte
-
-func ParseInput(data []byte) {
-	rd := Type(data[0])
-	switch rd {
-	case INTEGER:
-	case STRING:
-	case BULK:
-	case ARRAY:
-	case ERROR:
-	default:
-		fmt.Println("Unknown response type: ", rd)
+func (r *Resp) Write(val Value) error {
+	marshalledValue, err := val.Marshal()
+	if err != nil {
+		fmt.Println(err)
+		return err
 	}
+	_, err = r.writer.Write(marshalledValue)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
