@@ -14,7 +14,7 @@ func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
-	l, err := net.Listen("tcp", "0.0.0.0:6379")
+	l, err := net.Listen("tcp", "0.0.0.0:6378")
 	if err != nil {
 		fmt.Println("Failed to bind to port 6379")
 		os.Exit(1)
@@ -60,6 +60,7 @@ func HandleClient(conn net.Conn) error {
 		resp := NewResp(conn)
 		val, err := resp.Read()
 		if err != nil {
+			fmt.Println(err)
 			return err
 		}
 		fmt.Println(val)
@@ -68,3 +69,7 @@ func HandleClient(conn net.Conn) error {
 		conn.Write([]byte("+OK\r\n"))
 	}
 }
+
+
+// Test the code using this:
+// printf '*2\r\n$5\r\nhello\r\n$5\r\nworld\r\n' | nc localhost 6378
