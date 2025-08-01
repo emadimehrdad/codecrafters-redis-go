@@ -62,6 +62,7 @@ func (v Value) marshalBulk() ([]byte, error) {
 	bytes := make([]byte, 0, len(v.bulk)+4)
 	bytes = append(bytes, BULK)
 	bytes = append(bytes, strconv.Itoa(len(v.bulk))...)
+	bytes = append(bytes, '\r', '\n')
 	bytes = append(bytes, v.bulk...)
 	bytes = append(bytes, '\r', '\n')
 	return bytes, nil
