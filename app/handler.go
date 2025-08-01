@@ -10,5 +10,5 @@ func ping(args []Value) Value {
 }
 
 func echo(args []Value) Value {
-	return Value{typ: "array", array: args}
+	return Value{typ: "bulk", bulk: args[0].bulk}
 }
